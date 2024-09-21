@@ -1,19 +1,50 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 
 class MyUserDetails extends StatefulWidget {
   const MyUserDetails({super.key});
-
   @override
   State<MyUserDetails> createState() => _MyUserDetailsState();
 }
 
 class _MyUserDetailsState extends State<MyUserDetails> {
+  Map<String, dynamic>? userResponse;
+  void getUserDetails() async {
+    var person =
+        await http.get(Uri.parse("https://random-data-api.com/api/v2/users"));
+
+    if (person.statusCode == 200) {
+      var getUserDetailsApi = jsonDecode(person.body);
+      userResponse = getUserDetailsApi;
+      setState(() {});
+      print(userResponse);
+    } else {
+      print("something went wrong");
+    }
+  }
+
+  @override
+  void initState() {
+    getUserDetails();
+    // TODO: implement initState
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
+    String firstName = userResponse?["first_name"] ?? 'First Name';
+    String lastName = userResponse?["last_name"] ?? 'Last Name';
+    String fullName = firstName + " " + lastName;
     return Scaffold(
       appBar: AppBar(
-        title: Text("API User Details"),
+        title: Text(
+          "API User Info",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.amber,
       ),
       body: Column(
@@ -23,24 +54,32 @@ class _MyUserDetailsState extends State<MyUserDetails> {
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Center(
-                child: Container(
-                    height: 100,
-                    width: 100,
-                    decoration:
-                        BoxDecoration(borderRadius: BorderRadius.circular(125)),
-                    child: CircleAvatar(
-                        radius: 20,
-                        backgroundImage: NetworkImage(
-                            "https://cdn.dribbble.com/users/16986/screenshots/2200438/media/a3456ad146484d9240c3261451fc7262.png"))),
-              ),
-              Text(
-                "sagar Dhadke",
-                style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
-              ),
-              Text("sagardhadke",
-                  style: GoogleFonts.roboto(
-                      textStyle: TextStyle(fontSize: 18, color: Colors.grey)))
+              userResponse == null
+                  ? CircularProgressIndicator()
+                  : Center(
+                      child: Container(
+                          height: 100,
+                          width: 100,
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(125)),
+                          child: CircleAvatar(
+                              radius: 20,
+                              backgroundImage:
+                                  NetworkImage(userResponse!["avatar"]))),
+                    ),
+              userResponse == null
+                  ? CircularProgressIndicator()
+                  : Text(
+                      fullName,
+                      style:
+                          TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
+                    ),
+              userResponse == null
+                  ? CircularProgressIndicator()
+                  : Text(userResponse!["username"],
+                      style: GoogleFonts.roboto(
+                          textStyle:
+                              TextStyle(fontSize: 18, color: Colors.grey)))
             ],
           ),
           SizedBox(height: 15),
@@ -59,12 +98,14 @@ class _MyUserDetailsState extends State<MyUserDetails> {
                         style: TextStyle(
                             fontSize: 20, fontWeight: FontWeight.bold),
                       ),
-                      Text(
-                        "+91 98765431210",
-                        style: TextStyle(
-                          fontSize: 15,
-                        ),
-                      ),
+                      userResponse == null
+                          ? CircularProgressIndicator()
+                          : Text(
+                              userResponse!["phone_number"],
+                              style: TextStyle(
+                                fontSize: 15,
+                              ),
+                            ),
                     ],
                   ),
                 ),
@@ -86,12 +127,14 @@ class _MyUserDetailsState extends State<MyUserDetails> {
                         style: TextStyle(
                             fontSize: 20, fontWeight: FontWeight.bold),
                       ),
-                      Text(
-                        "peaceunique2003@gmail.com",
-                        style: TextStyle(
-                          fontSize: 15,
-                        ),
-                      ),
+                      userResponse == null
+                          ? CircularProgressIndicator()
+                          : Text(
+                              userResponse!["email"],
+                              style: TextStyle(
+                                fontSize: 15,
+                              ),
+                            ),
                     ],
                   ),
                 ),
@@ -113,12 +156,14 @@ class _MyUserDetailsState extends State<MyUserDetails> {
                         style: TextStyle(
                             fontSize: 20, fontWeight: FontWeight.bold),
                       ),
-                      Text(
-                        "00-00-0000",
-                        style: TextStyle(
-                          fontSize: 15,
-                        ),
-                      ),
+                      userResponse == null
+                          ? CircularProgressIndicator()
+                          : Text(
+                              userResponse!["date_of_birth"],
+                              style: TextStyle(
+                                fontSize: 15,
+                              ),
+                            ),
                     ],
                   ),
                 ),
@@ -135,6 +180,8 @@ class _MyUserDetailsState extends State<MyUserDetails> {
                       ElevatedButton.styleFrom(backgroundColor: Colors.amber),
                   onPressed: () {
                     //here is my API code
+                    setState(() {});
+                    getUserDetails();
                   },
                   child: Text(
                     "Fetch Data",
