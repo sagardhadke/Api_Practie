@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MyUserDetails extends StatefulWidget {
   const MyUserDetails({super.key});
@@ -13,24 +14,77 @@ class MyUserDetails extends StatefulWidget {
 
 class _MyUserDetailsState extends State<MyUserDetails> {
   Map<String, dynamic>? userResponse;
-  void getUserDetails() async {
-    var person =
-        await http.get(Uri.parse("https://random-data-api.com/api/v2/users"));
 
-    if (person.statusCode == 200) {
-      var getUserDetailsApi = jsonDecode(person.body);
-      userResponse = getUserDetailsApi;
-      setState(() {});
-      print(userResponse);
-    } else {
-      print("something went wrong");
-    }
+  Future<void> saveData(String key, Map<String, dynamic> value) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString(key, jsonEncode(value));
   }
+
+  Future<Map<String, dynamic>?> loadData(String key) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? jsonString = prefs.getString(key);
+    return jsonString != null ? jsonDecode(jsonString) : null;
+  }
+
+  // void getUserDetails() async {
+  //   var person =
+  //       await http.get(Uri.parse("https://random-data-api.com/api/v2/users"));
+
+  //   if (person.statusCode == 200) {
+  //     var getUserDetailsApi = jsonDecode(person.body);
+  //     userResponse = getUserDetailsApi;
+
+  //     // Save data to SharedPreferences
+  //     await saveData('userDetails', userResponse!);
+
+  //     setState(() {});
+  //     print(userResponse);
+  //   } else {
+  //     // Try to load data from SharedPreferences if API call fails
+  //     userResponse = await loadData('userDetails');
+  //     setState(() {});
+
+  //    if (userResponse != null) {
+  //     print("Something went wrong, loading cached data: $userResponse");
+  //   } else {
+  //     print("No cached data available.");
+  //   }
+  //   }
+  // }
+
+  void getUserDetails() async {
+  // Load cached data first
+  userResponse = await loadData('userDetails');
+  setState(() {}); // Show cached data immediately if available
+
+  try {
+    // Attempt to fetch new data from the API
+    var response = await http.get(Uri.parse("https://random-data-api.com/api/v2/users"));
+
+    if (response.statusCode == 200) {
+      var getUserDetailsApi = jsonDecode(response.body);
+      userResponse = getUserDetailsApi;
+
+      // Save the new data to SharedPreferences
+      await saveData('userDetails', userResponse!);
+      
+      setState(() {}); // Update UI with new data
+      print("Fetched new user details: $userResponse");
+    } else {
+      // Handle unexpected status codes
+      print("Error fetching data: ${response.statusCode}");
+    }
+  } catch (e) {
+    // Handle network errors gracefully
+    print("Error fetching user details: $e");
+    // Cached data is already displayed; no need for additional handling here
+  }
+}
+
 
   @override
   void initState() {
     getUserDetails();
-    // TODO: implement initState
     super.initState();
   }
 
@@ -180,7 +234,7 @@ class _MyUserDetailsState extends State<MyUserDetails> {
                       ElevatedButton.styleFrom(backgroundColor: Colors.amber),
                   onPressed: () {
                     //here is my API code
-                    setState(() {});
+
                     getUserDetails();
                   },
                   child: Text(
